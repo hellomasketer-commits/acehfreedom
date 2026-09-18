@@ -95,42 +95,57 @@ export const AudioPlayerDrawer: React.FC<AudioPlayerDrawerProps> = ({
         )}
 
         {/* Player Main Controls Bar */}
-        <div className="p-3 sm:p-4 flex flex-col gap-2.5">
-          {/* Top Info Row */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
-                style={{
-                  backgroundColor: `${activeExhibit.accentColor}20`,
-                  borderColor: `${activeExhibit.accentColor}50`,
-                }}
-              >
-                <Volume2 className="w-5 h-5 text-amber-400" />
+        <div className="p-3 sm:p-4 flex flex-col gap-2 sm:gap-2.5">
+          {/* Info & Tools Row - Responsive Stack on Mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+            {/* Exhibit Info & Mobile Close */}
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 border"
+                  style={{
+                    backgroundColor: `${activeExhibit.accentColor}20`,
+                    borderColor: `${activeExhibit.accentColor}50`,
+                  }}
+                >
+                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-amber-400 tracking-wider">
+                      Panduan Suara
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] text-neutral-400 font-mono truncate">• {activeExhibit.era}</span>
+                  </div>
+                  <button
+                    onClick={onOpenInspector}
+                    className="text-xs sm:text-sm font-bold text-neutral-100 truncate hover:text-amber-300 transition-colors text-left block max-w-[200px] sm:max-w-[320px]"
+                  >
+                    {activeExhibit.name}
+                  </button>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">Panduan Suara</span>
-                  <span className="text-[11px] text-neutral-400 font-mono">• {activeExhibit.era}</span>
-                </div>
-                <button
-                  onClick={onOpenInspector}
-                  className="text-sm font-bold text-neutral-100 truncate hover:text-amber-300 transition-colors text-left block"
-                >
-                  {activeExhibit.name}
-                </button>
-              </div>
+              {/* Mobile-only Close Button on Top Right */}
+              <button
+                id="drawer-close-btn-mobile"
+                onClick={onClosePlayer}
+                className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors sm:hidden shrink-0"
+                title="Tutup Pemutar"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Right Tools (Voice, Speed, Transcript, Inspect 3D, Close) */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Right Tools (Voice, Speed, Transcript, Inspect 3D, Desktop Close) */}
+            <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 border-t sm:border-t-0 pt-1.5 sm:pt-0 border-neutral-800/80">
               {/* Voice Style Selector */}
               <select
                 id="voice-persona-select"
                 value={voiceStyle}
                 onChange={(e) => onChangeVoice(e.target.value as 'curator' | 'storyteller' | 'archivist')}
-                className="bg-neutral-800 text-neutral-300 hover:text-white text-xs px-2.5 py-1.5 rounded-lg border border-neutral-700 focus:outline-none focus:border-amber-400"
+                className="bg-neutral-800 text-neutral-300 hover:text-white text-xs px-2 sm:px-2.5 py-1.5 rounded-lg border border-neutral-700 focus:outline-none focus:border-amber-400 min-h-[34px]"
                 title="Gaya Suara Narasi"
               >
                 <option value="curator">Kurator</option>
@@ -142,7 +157,7 @@ export const AudioPlayerDrawer: React.FC<AudioPlayerDrawerProps> = ({
               <button
                 id="audio-speed-btn"
                 onClick={nextSpeed}
-                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-mono font-semibold border border-neutral-700"
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-mono font-semibold border border-neutral-700 min-h-[34px]"
                 title="Kecepatan Pemutaran"
               >
                 {speed}x
@@ -152,7 +167,7 @@ export const AudioPlayerDrawer: React.FC<AudioPlayerDrawerProps> = ({
               <button
                 id="toggle-transcript-btn"
                 onClick={() => setShowTranscript(!showTranscript)}
-                className={`p-2 rounded-lg border transition-colors ${
+                className={`p-2 rounded-lg border transition-colors min-h-[34px] flex items-center justify-center ${
                   showTranscript
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                     : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white border-neutral-700'
@@ -166,17 +181,17 @@ export const AudioPlayerDrawer: React.FC<AudioPlayerDrawerProps> = ({
               <button
                 id="drawer-open-inspector-btn"
                 onClick={onOpenInspector}
-                className="p-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-amber-400 border border-neutral-700 transition-colors"
+                className="p-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-amber-400 border border-neutral-700 transition-colors min-h-[34px] flex items-center justify-center"
                 title="Periksa Artefak 3D"
               >
                 <Eye className="w-4 h-4" />
               </button>
 
-              {/* Close Audio Player */}
+              {/* Desktop Close Button */}
               <button
                 id="drawer-close-btn"
                 onClick={onClosePlayer}
-                className="p-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+                className="hidden sm:flex p-2 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors min-h-[34px] items-center justify-center"
                 title="Tutup Pemutar"
               >
                 <X className="w-4 h-4" />

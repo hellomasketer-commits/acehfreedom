@@ -27,20 +27,20 @@ export const TourGuideOverlay: React.FC<TourGuideOverlayProps> = ({
   if (!currentExhibit) return null;
 
   return (
-    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 w-[94%] max-w-xl animate-fade-in pointer-events-none select-none">
-      <div className="bg-neutral-900/95 backdrop-blur-xl border border-amber-500/60 rounded-3xl p-4 sm:p-5 shadow-2xl pointer-events-auto flex flex-col gap-3">
+    <div className="fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-30 w-[95%] sm:w-[94%] max-w-xl animate-fade-in pointer-events-none select-none">
+      <div className="bg-neutral-900/95 backdrop-blur-xl border border-amber-500/60 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-2xl pointer-events-auto flex flex-col gap-2.5 sm:gap-3">
         {/* Top Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-            <span className="text-xs uppercase tracking-wider font-bold text-amber-400">
-              Tur Tematik: {tour.title}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+            <span className="text-[11px] sm:text-xs uppercase tracking-wider font-bold text-amber-400 truncate">
+              Tur: {tour.title}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-neutral-300 font-bold bg-neutral-800 px-2.5 py-1 rounded-full border border-neutral-700">
-              Perhentian {currentStepIndex + 1} dari {totalStops}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="text-[10px] sm:text-xs font-mono text-neutral-300 font-bold bg-neutral-800 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-neutral-700">
+              {currentStepIndex + 1}/{totalStops}
             </span>
             <button
               onClick={onExitTour}
@@ -53,18 +53,19 @@ export const TourGuideOverlay: React.FC<TourGuideOverlayProps> = ({
         </div>
 
         {/* Current Stop Exhibit Banner */}
-        <div className="flex items-center justify-between gap-3 bg-neutral-950/60 p-3 rounded-2xl border border-neutral-800">
+        <div className="flex items-center justify-between gap-2.5 bg-neutral-950/60 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-neutral-800">
           <div className="min-w-0">
-            <div className="text-[11px] text-neutral-400">{currentExhibit.era} • {currentExhibit.year}</div>
-            <div className="text-sm sm:text-base font-bold text-white truncate">{currentExhibit.name}</div>
+            <div className="text-[10px] sm:text-[11px] text-neutral-400 truncate">{currentExhibit.era} • {currentExhibit.year}</div>
+            <div className="text-xs sm:text-base font-bold text-white truncate">{currentExhibit.name}</div>
           </div>
 
           <button
             onClick={() => onOpenInspector(currentExhibit.id)}
-            className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="shrink-0 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[34px]"
           >
             <Headphones className="w-3.5 h-3.5" />
-            <span>Periksa Artefak</span>
+            <span className="hidden sm:inline">Periksa Artefak</span>
+            <span className="sm:hidden">Artefak</span>
           </button>
         </div>
 

@@ -21,50 +21,50 @@ export const PassportModal: React.FC<PassportModalProps> = ({
   const completionPercent = Math.round((stampedCount / totalCount) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl animate-fade-in select-none">
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-gradient-to-b from-[#1c1917] to-[#0c0a09] border-2 border-amber-600/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl animate-fade-in select-none">
+      <div className="relative w-full max-w-4xl max-h-[92vh] bg-gradient-to-b from-[#1c1917] to-[#0c0a09] border sm:border-2 border-amber-600/50 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-colors shadow-lg"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 p-2 sm:p-2.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-colors shadow-lg"
           title="Tutup Paspor"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* Passport Header: Gold Embossed Seal */}
-        <div className="p-6 sm:p-8 border-b border-amber-600/30 bg-neutral-950/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-neutral-950 shadow-xl border border-amber-300">
-              <Award className="w-8 h-8" />
+        <div className="p-4 sm:p-6 md:p-8 border-b border-amber-600/30 bg-neutral-950/60 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-neutral-950 shadow-xl border border-amber-300 shrink-0">
+              <Award className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-widest text-amber-400">
+              <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-amber-400">
                 Aceh Institute Virtual Archive
               </div>
-              <h2 className="text-xl sm:text-2xl font-serif font-bold text-amber-100 tracking-tight">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-amber-100 tracking-tight">
                 Paspor Sejarah Kemerdekaan Aceh
               </h2>
-              <p className="text-xs text-neutral-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 max-w-md">
                 Dokumentasi penjelajahan saksi bisu perjuangan, traktat, dan deklarasi kemerdekaan
               </p>
             </div>
           </div>
 
           {/* Progress Pill */}
-          <div className="bg-neutral-900/90 border border-amber-500/40 px-5 py-3 rounded-2xl flex items-center gap-4">
+          <div className="bg-neutral-900/90 border border-amber-500/40 px-3.5 sm:px-5 py-2 sm:py-3 rounded-2xl flex items-center gap-3 sm:gap-4 shrink-0">
             <div>
-              <div className="text-[10px] uppercase font-semibold text-neutral-400">Artefak Terstempel</div>
-              <div className="text-xl font-bold font-mono text-amber-300">{stampedCount} / {totalCount}</div>
+              <div className="text-[9px] sm:text-[10px] uppercase font-semibold text-neutral-400">Artefak Terstempel</div>
+              <div className="text-base sm:text-xl font-bold font-mono text-amber-300">{stampedCount} / {totalCount}</div>
             </div>
-            <div className="w-12 h-12 rounded-full border-2 border-amber-500/30 flex items-center justify-center font-bold text-xs text-amber-400 font-mono">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-amber-500/30 flex items-center justify-center font-bold text-xs text-amber-400 font-mono">
               {completionPercent}%
             </div>
           </div>
         </div>
 
         {/* Passport Stamps Grid */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 md:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {EXHIBITS.map((exhibit) => {
               const isStamped = stampedExhibitIds.includes(exhibit.id);

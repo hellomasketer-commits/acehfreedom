@@ -9,7 +9,9 @@ import { MuseumControls } from './components/MuseumControls';
 import { PassportModal } from './components/PassportModal';
 import { TourGuideOverlay } from './components/TourGuideOverlay';
 import { HistoricalTimeline } from './components/HistoricalTimeline';
-import { Compass, Sparkles, BookOpen, Headphones, Glasses, Volume2, X, Award, ChevronRight, Calendar } from 'lucide-react';
+import { VoiceCommandOverlay } from './components/VoiceCommandOverlay';
+import { voiceCommander, CommandParseResult } from './services/voiceCommander';
+import { Compass, Sparkles, BookOpen, Headphones, Glasses, Volume2, X, Award, ChevronRight, Calendar, Mic } from 'lucide-react';
 
 export default function App() {
   // Navigation & Exhibit State
@@ -19,6 +21,7 @@ export default function App() {
   const [showPassport, setShowPassport] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showTimeline, setShowTimeline] = useState(true);
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
 
   // Teleportation target state
   const [teleportTarget, setTeleportTarget] = useState<{
@@ -253,6 +256,135 @@ export default function App() {
     [ambientSoundEnabled]
   );
 
+  // Listen for Voice Commander state changes
+  useEffect(() => {
+    voiceCommander.onStateChange((state) => {
+      setIsVoiceListening(state.isListening);
+    });
+  }, []);
+
+  // Voice Command Execution Handler (Web Speech API)
+  const handleVoiceCommand = useCallback(
+    (result: CommandParseResult) => {
+      if (!result.intent) return;
+      const { intent } = result;
+
+      switch (intent.type) {
+        case 'NAVIGATE_WING':
+          handleJumpToEra(intent.wingId);
+          break;
+
+        case 'NAVIGATE_LOBBY':
+          setTeleportTarget({
+            pos: [0, 1.6, 2],
+            lookAt: [0, 1.6, -4],
+          });
+          audioGuide.playAcousticChime(523.25);
+          break;
+
+        case 'NAVIGATE_EXHIBIT':
+          handleJumpToExhibit(intent.exhibitId);
+          break;
+
+        case 'NEXT_EXHIBIT':
+          handleNextExhibit();
+          break;
+
+        case 'PREV_EXHIBIT':
+          handlePrevExhibit();
+          break;
+
+        case 'START_AUDIO_TOUR': {
+          const tour =
+            (intent.tourId && GUIDED_TOURS.find((t) => t.id === intent.tourId)) ||
+            GUIDED_TOURS[0];
+          handleStartTour(tour);
+          break;
+        }
+
+        case 'NEXT_TOUR_STOP':
+          handleNextTourStop();
+          break;
+
+        case 'PREV_TOUR_STOP':
+          handlePrevTourStop();
+          break;
+
+        case 'EXIT_TOUR':
+          handleExitTour();
+          break;
+
+        case 'PLAY_AUDIO':
+          if (activeExhibit) {
+            handlePlayAudio(activeExhibit);
+          } else {
+            handlePlayAudio(EXHIBITS[0]);
+          }
+          break;
+
+        case 'PAUSE_AUDIO':
+          handlePauseAudio();
+          break;
+
+        case 'RESUME_AUDIO':
+          handleResumeAudio();
+          break;
+
+        case 'OPEN_INSPECTOR':
+          if (activeExhibitId) {
+            setInspectingExhibitId(activeExhibitId);
+          } else {
+            setInspectingExhibitId(EXHIBITS[0].id);
+          }
+          break;
+
+        case 'CLOSE_INSPECTOR':
+          setInspectingExhibitId(null);
+          break;
+
+        case 'OPEN_PASSPORT':
+          setShowPassport(true);
+          break;
+
+        case 'CLOSE_PASSPORT':
+          setShowPassport(false);
+          break;
+
+        case 'OPEN_TIMELINE':
+          setShowTimeline(true);
+          break;
+
+        case 'CLOSE_TIMELINE':
+          setShowTimeline(false);
+          break;
+
+        case 'TOGGLE_VR':
+          handleToggleVR();
+          break;
+
+        case 'SHOW_HELP':
+          // Handled within VoiceCommandOverlay modal
+          break;
+      }
+    },
+    [
+      handleJumpToEra,
+      handleJumpToExhibit,
+      handleNextExhibit,
+      handlePrevExhibit,
+      handleStartTour,
+      handleNextTourStop,
+      handlePrevTourStop,
+      handleExitTour,
+      activeExhibit,
+      handlePlayAudio,
+      handlePauseAudio,
+      handleResumeAudio,
+      activeExhibitId,
+      handleToggleVR,
+    ]
+  );
+
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -265,6 +397,8 @@ export default function App() {
       }
 
       if (e.code === 'KeyV') {
+        voiceCommander.toggleListening();
+      } else if (e.code === 'KeyR') {
         handleToggleVR();
       } else if (e.code === 'KeyP') {
         setShowPassport((prev) => !prev);
@@ -282,7 +416,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAudioPlaying, handlePauseAudio, handleResumeAudio]);
+  }, [isAudioPlaying, handlePauseAudio, handleResumeAudio, handleToggleVR]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-neutral-950 font-sans text-neutral-100 select-none">
@@ -336,6 +470,9 @@ export default function App() {
         totalExhibits={EXHIBITS.length}
         onToggleTimeline={() => setShowTimeline((prev) => !prev)}
         isTimelineOpen={showTimeline}
+        onToggleVoice={() => voiceCommander.toggleListening()}
+        isVoiceListening={isVoiceListening}
+        isAudioDrawerOpen={isAudioPlaying && activeExhibit !== null}
       />
 
       {/* Interactive Bottom-Aligned Historical Timeline */}
@@ -347,6 +484,13 @@ export default function App() {
         isAudioDrawerOpen={isAudioPlaying && activeExhibit !== null}
         isOpen={showTimeline}
         onToggleOpen={() => setShowTimeline((prev) => !prev)}
+      />
+
+      {/* Web Speech API Voice Command Navigation Overlay */}
+      <VoiceCommandOverlay
+        onExecuteCommand={handleVoiceCommand}
+        isAudioDrawerOpen={isAudioPlaying && activeExhibit !== null}
+        isTimelineOpen={showTimeline}
       />
 
       {/* Persistent Bottom Audio Player Drawer */}
@@ -469,6 +613,24 @@ export default function App() {
                 <div className="text-xs font-bold text-neutral-100 mt-0.5">The Price of Freedom</div>
                 <div className="text-[11px] text-neutral-400 mt-0.5">Diari Hasan Tiro & Radio Gerilya</div>
               </div>
+            </div>
+
+            {/* Voice Command & Navigation Feature Pill */}
+            <div className="mt-4 p-3 rounded-2xl bg-neutral-900/80 border border-neutral-800 flex items-center justify-between text-xs text-neutral-300">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                  <Mic className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-neutral-200 block">Navigasi Perintah Suara (Voice Command)</span>
+                  <span className="text-[11px] text-neutral-400">
+                    Katakan <strong className="text-amber-300 font-mono">"Go to Halimon"</strong> atau <strong className="text-amber-300 font-mono">"Start audio tour"</strong> untuk navigasi langsung.
+                  </span>
+                </div>
+              </div>
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded-lg bg-neutral-800 text-[10px] text-amber-300 font-mono border border-neutral-700">
+                Tombol [V]
+              </span>
             </div>
 
             {/* Action Buttons */}

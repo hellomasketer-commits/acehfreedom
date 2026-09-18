@@ -163,10 +163,53 @@ export const ExhibitInspector: React.FC<ExhibitInspectorProps> = ({
       zoomRef.current = Math.max(1.4, Math.min(4.5, zoomRef.current + e.deltaY * 0.002));
     };
 
+    // Mobile Touch Drag & Pinch-to-Zoom
+    let initialPinchDistance = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        isDraggingRef.current = true;
+        previousMousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        isDraggingRef.current = false;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDistance = Math.hypot(dx, dy);
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && isDraggingRef.current) {
+        const dx = e.touches[0].clientX - previousMousePosRef.current.x;
+        const dy = e.touches[0].clientY - previousMousePosRef.current.y;
+        previousMousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+
+        rotationRef.current.y += dx * 0.015;
+        rotationRef.current.x = Math.max(-0.5, Math.min(0.5, rotationRef.current.x + dy * 0.015));
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const currentDistance = Math.hypot(dx, dy);
+        if (initialPinchDistance > 0) {
+          const delta = (initialPinchDistance - currentDistance) * 0.005;
+          zoomRef.current = Math.max(1.4, Math.min(4.5, zoomRef.current + delta));
+          initialPinchDistance = currentDistance;
+        }
+      }
+    };
+
+    const onTouchEnd = () => {
+      isDraggingRef.current = false;
+      initialPinchDistance = 0;
+    };
+
     el.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
     el.addEventListener('wheel', onWheel, { passive: false });
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
 
     return () => {
       cancelAnimationFrame(animId);
@@ -174,6 +217,10 @@ export const ExhibitInspector: React.FC<ExhibitInspectorProps> = ({
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       el.removeEventListener('wheel', onWheel);
+
+      el.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
       renderer.dispose();
     };
   }, [exhibit]);
@@ -196,61 +243,61 @@ export const ExhibitInspector: React.FC<ExhibitInspectorProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl animate-fade-in select-none">
-      <div className="relative w-full max-w-5xl max-h-[92vh] bg-neutral-900 border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+      <div className="relative w-full max-w-5xl max-h-[92vh] sm:max-h-[88vh] bg-neutral-900 border border-amber-500/40 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
         {/* Close Button */}
         <button
           id="btn-close-inspector"
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-white/10 transition-colors shadow-lg"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 p-2 sm:p-2.5 rounded-full bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white border border-white/10 transition-colors shadow-lg"
           title="Tutup Inspektur"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* LEFT COLUMN: 3D Model Interactive Showcase */}
-        <div className="relative w-full md:w-1/2 h-[340px] md:h-auto bg-gradient-to-b from-[#181620] to-[#0d0c11] flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-neutral-800">
-          <div ref={canvasContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+        <div className="relative w-full md:w-1/2 h-[220px] sm:h-[300px] md:h-auto min-h-[200px] bg-gradient-to-b from-[#181620] to-[#0d0c11] flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-neutral-800 shrink-0">
+          <div ref={canvasContainerRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
 
           {/* 3D Floating Toolstrip */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-neutral-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-xs text-neutral-300">
+          <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 bg-neutral-950/85 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10 shadow-lg text-xs text-neutral-300">
             <button
               onClick={handleResetView}
-              className="p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors"
+              className="p-1 sm:p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors"
               title="Reset Orientasi"
             >
-              <RotateCw className="w-4 h-4" />
+              <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            <div className="w-[1px] h-4 bg-neutral-700" />
+            <div className="w-[1px] h-3.5 sm:h-4 bg-neutral-700" />
             <button
               onClick={() => handleZoom(-0.4)}
-              className="p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+              className="p-1 sm:p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
               title="Perbesar"
             >
-              <ZoomIn className="w-4 h-4" />
+              <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => handleZoom(0.4)}
-              className="p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+              className="p-1 sm:p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
               title="Perkecil"
             >
-              <ZoomOut className="w-4 h-4" />
+              <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            <span className="text-[11px] text-neutral-400 px-1">Putar 360°</span>
+            <span className="text-[10px] sm:text-[11px] text-neutral-400 px-1 hidden xs:inline">Putar 360°</span>
           </div>
 
           {/* Era & Year Badge */}
-          <div className="absolute top-4 left-4 flex flex-col gap-1">
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <div className="absolute top-3 sm:top-4 left-3 sm:left-4 flex flex-col gap-1">
+            <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
               {exhibit.era}
             </span>
-            <span className="text-xs font-mono text-neutral-400 pl-1">{exhibit.year}</span>
+            <span className="text-[11px] sm:text-xs font-mono text-neutral-400 pl-1">{exhibit.year}</span>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Curatorial Records, Diary Excerpts & Audio */}
-        <div className="w-full md:w-1/2 flex flex-col max-h-[500px] md:max-h-full overflow-hidden bg-neutral-900/90">
+        <div className="w-full md:w-1/2 flex flex-col flex-1 min-h-0 overflow-hidden bg-neutral-900/90">
           {/* Header */}
-          <div className="p-5 md:p-6 border-b border-neutral-800">
+          <div className="p-4 sm:p-5 md:p-6 border-b border-neutral-800 shrink-0">
             <div className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
               {exhibit.nativeTitle}
             </div>

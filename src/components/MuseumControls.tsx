@@ -14,6 +14,7 @@ import {
   Info,
   CheckCircle2,
   Calendar,
+  Mic,
 } from 'lucide-react';
 
 interface MuseumControlsProps {
@@ -26,6 +27,9 @@ interface MuseumControlsProps {
   totalExhibits: number;
   onToggleTimeline?: () => void;
   isTimelineOpen?: boolean;
+  onToggleVoice?: () => void;
+  isVoiceListening?: boolean;
+  isAudioDrawerOpen?: boolean;
 }
 
 export const MuseumControls: React.FC<MuseumControlsProps> = ({
@@ -38,15 +42,29 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
   totalExhibits,
   onToggleTimeline,
   isTimelineOpen,
+  onToggleVoice,
+  isVoiceListening,
+  isAudioDrawerOpen = false,
 }) => {
   const [showMinimap, setShowMinimap] = useState(false);
   const [showWingMenu, setShowWingMenu] = useState(false);
   const [showTourMenu, setShowTourMenu] = useState(false);
 
+  // Dynamic bottom positioning on mobile so it doesn't overlap timeline or audio bar
+  const bottomPositionClass = isAudioDrawerOpen
+    ? isTimelineOpen
+      ? 'bottom-36 sm:bottom-28'
+      : 'bottom-28 sm:bottom-24'
+    : isTimelineOpen
+    ? 'bottom-20 sm:bottom-20 md:bottom-4'
+    : 'bottom-2.5 sm:bottom-4';
+
   return (
     <>
-      {/* Floating Bottom Left Navigation Panel */}
-      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-2">
+      {/* Floating Bottom Navigation Panel with Smooth Mobile Scroll */}
+      <div
+        className={`fixed left-2.5 sm:left-4 z-30 flex items-center gap-1.5 sm:gap-2 transition-all duration-300 max-w-[calc(100vw-1.25rem)] overflow-x-auto no-scrollbar py-1 ${bottomPositionClass}`}
+      >
         {/* Wing Teleport Menu Trigger */}
         <button
           id="open-wings-menu-btn"
@@ -55,10 +73,10 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
             setShowTourMenu(false);
             setShowMinimap(false);
           }}
-          className="px-3.5 py-2.5 rounded-2xl bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border border-neutral-700/80 backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-2 transition-all active:scale-95"
+          className="min-h-[38px] sm:min-h-[42px] px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-neutral-900/95 hover:bg-neutral-800 text-neutral-200 border border-neutral-700/80 backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shrink-0"
           title="Teleport ke Sayap Galeri Museum"
         >
-          <Layers className="w-4 h-4 text-amber-400" />
+          <Layers className="w-4 h-4 text-amber-400 shrink-0" />
           <span className="hidden sm:inline">Sayap Galeri</span>
         </button>
 
@@ -70,14 +88,14 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
             setShowWingMenu(false);
             setShowMinimap(false);
           }}
-          className={`px-3.5 py-2.5 rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-2 transition-all active:scale-95 ${
+          className={`min-h-[38px] sm:min-h-[42px] px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shrink-0 ${
             activeTour
               ? 'bg-amber-500 text-neutral-950 border-amber-400 font-bold'
-              : 'bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
+              : 'bg-neutral-900/95 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
           }`}
           title="Tur Panduan Tematik Bersejarah"
         >
-          <Sparkles className="w-4 h-4 text-amber-400" />
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <span className="hidden sm:inline">{activeTour ? 'Tur: ' + activeTour.badge : 'Tur Tematik'}</span>
         </button>
 
@@ -89,14 +107,14 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
             setShowWingMenu(false);
             setShowTourMenu(false);
           }}
-          className={`px-3.5 py-2.5 rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-2 transition-all active:scale-95 ${
+          className={`min-h-[38px] sm:min-h-[42px] px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shrink-0 ${
             showMinimap
               ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-              : 'bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
+              : 'bg-neutral-900/95 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
           }`}
           title="Peta Denah Museum Interaktif"
         >
-          <Map className="w-4 h-4 text-amber-400" />
+          <Map className="w-4 h-4 text-amber-400 shrink-0" />
           <span className="hidden sm:inline">Denah Museum</span>
         </button>
 
@@ -104,10 +122,10 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
         <button
           id="open-passport-btn"
           onClick={onOpenPassport}
-          className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 text-amber-50 border border-amber-500/50 backdrop-blur-md text-xs font-bold shadow-xl flex items-center gap-2 transition-all active:scale-95"
+          className="min-h-[38px] sm:min-h-[42px] px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 text-amber-50 border border-amber-500/50 backdrop-blur-md text-xs font-bold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shrink-0"
           title="Paspor Pengunjung & Arsip Stempel Sejarah"
         >
-          <Award className="w-4 h-4 text-amber-300" />
+          <Award className="w-4 h-4 text-amber-300 shrink-0" />
           <span className="hidden sm:inline">Paspor</span>
           <span className="px-1.5 py-0.5 rounded-full bg-black/40 text-[10px] text-amber-200 font-mono">
             {stampedCount}/{totalExhibits}
@@ -119,22 +137,39 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
           <button
             id="open-timeline-btn"
             onClick={onToggleTimeline}
-            className={`px-3.5 py-2.5 rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-2 transition-all active:scale-95 ${
+            className={`min-h-[38px] sm:min-h-[42px] px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shrink-0 ${
               isTimelineOpen
                 ? 'bg-amber-500/25 text-amber-300 border-amber-400 font-bold'
-                : 'bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
+                : 'bg-neutral-900/95 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
             }`}
             title="Buka / Tutup Linimasa Kronologi 4 Sayap"
           >
-            <Calendar className="w-4 h-4 text-amber-400" />
+            <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="hidden md:inline">Linimasa</span>
+          </button>
+        )}
+
+        {/* Voice Command Quick Button */}
+        {onToggleVoice && (
+          <button
+            id="open-voice-btn"
+            onClick={onToggleVoice}
+            className={`min-h-[38px] sm:min-h-[42px] px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shrink-0 ${
+              isVoiceListening
+                ? 'bg-red-500/30 text-red-300 border-red-400 font-bold ring-2 ring-red-500/40'
+                : 'bg-neutral-900/95 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
+            }`}
+            title="Aktifkan Navigasi Perintah Suara (Tekan V)"
+          >
+            <Mic className={`w-4 h-4 shrink-0 ${isVoiceListening ? 'text-red-400 animate-pulse' : 'text-amber-400'}`} />
+            <span className="hidden lg:inline">{isVoiceListening ? 'Mendengarkan' : 'Suara'}</span>
           </button>
         )}
       </div>
 
       {/* Gallery Wings Modal Drawer */}
       {showWingMenu && (
-        <div className="fixed bottom-16 left-4 z-40 w-84 max-w-[90vw] bg-neutral-900/95 border border-neutral-700 rounded-3xl shadow-2xl p-4 backdrop-blur-xl animate-fade-in space-y-3">
+        <div className="fixed bottom-16 sm:bottom-20 left-2.5 sm:left-4 z-40 w-84 sm:w-96 max-w-[calc(100vw-1.5rem)] max-h-[75vh] overflow-y-auto bg-neutral-900/95 border border-neutral-700 rounded-2xl sm:rounded-3xl shadow-2xl p-4 backdrop-blur-xl animate-fade-in space-y-3">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
             <span className="text-xs uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
               <Compass className="w-4 h-4" />
@@ -194,7 +229,7 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
 
       {/* Guided Tours Modal */}
       {showTourMenu && (
-        <div className="fixed bottom-16 left-4 z-40 w-92 max-w-[92vw] bg-neutral-900/95 border border-neutral-700 rounded-3xl shadow-2xl p-4 sm:p-5 backdrop-blur-xl animate-fade-in space-y-3 max-h-[75vh] overflow-y-auto">
+        <div className="fixed bottom-16 sm:bottom-20 left-2.5 sm:left-4 z-40 w-92 max-w-[calc(100vw-1.5rem)] bg-neutral-900/95 border border-neutral-700 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 backdrop-blur-xl animate-fade-in space-y-3 max-h-[75vh] overflow-y-auto">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
             <span className="text-xs uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4" />
@@ -246,7 +281,7 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
 
       {/* Interactive 2D Floorplan Radar Modal */}
       {showMinimap && (
-        <div className="fixed bottom-16 left-4 z-40 w-96 max-w-[92vw] bg-neutral-900/95 border border-neutral-700 rounded-3xl shadow-2xl p-4 backdrop-blur-xl animate-fade-in space-y-3">
+        <div className="fixed bottom-16 sm:bottom-20 left-2.5 sm:left-4 z-40 w-96 max-w-[calc(100vw-1.5rem)] bg-neutral-900/95 border border-neutral-700 rounded-2xl sm:rounded-3xl shadow-2xl p-4 backdrop-blur-xl animate-fade-in space-y-3">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
             <div>
               <span className="text-xs uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
