@@ -1,0 +1,6 @@
+{
+  "name": "Museum Aceh Institute - Perjalanan Kemerdekaan Aceh",
+  "description": "Museum Virtual 3D interaktif Aceh Institute yang mendokumentasikan perjalanan sejarah dan perjuangan kemerdekaan Aceh, Deklarasi 4 Desember 1976 di Halimon, arsip harian The Price of Freedom karya Hasan di Tiro, artefak bersejarah, dan panduan audio.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
