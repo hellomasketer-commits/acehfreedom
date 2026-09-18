@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ArtifactMeshType, Exhibit } from '../types/museum';
 
+export type GraphicQuality = 'high' | 'balanced' | 'fast';
+
 export interface MuseumSceneSetup {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
@@ -10,6 +12,9 @@ export interface MuseumSceneSetup {
   cleanup: () => void;
   update: (delta: number) => void;
   teleportTo: (position: [number, number, number], lookAt?: [number, number, number]) => void;
+  isTeleporting: () => boolean;
+  setQuality: (quality: GraphicQuality) => void;
+  getQuality: () => GraphicQuality;
 }
 
 // Procedural texture generator for modern luxury white & gold Carrara museum marble floor
@@ -631,7 +636,8 @@ export function initMuseumScene(
   container: HTMLDivElement,
   exhibits: Exhibit[],
   onExhibitClick: (exhibitId: string) => void,
-  onHoverExhibit: (exhibitId: string | null) => void
+  onHoverExhibit: (exhibitId: string | null) => void,
+  onTeleportStart?: (position: [number, number, number], lookAt?: [number, number, number]) => void
 ): MuseumSceneSetup {
   const scene = new THREE.Scene();
   // Modern, cheerful, luminous sky atrium background
@@ -650,30 +656,39 @@ export function initMuseumScene(
     powerPreference: 'high-performance',
   });
   renderer.setSize(width, height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Cap devicePixelRatio to 1.25 for crisp rendering without 4K GPU fill-rate exhaustion
+  let currentQuality: GraphicQuality = 'balanced';
+  const getQualityPixelRatio = (q: GraphicQuality) => (q === 'high' ? Math.min(window.devicePixelRatio, 1.5) : q === 'balanced' ? 1.0 : 0.85);
+  renderer.setPixelRatio(getQualityPixelRatio(currentQuality));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.25; // Bright, luminous modern gallery exposure
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap; // PCF is significantly faster than PCFSoft
   renderer.xr.enabled = true;
 
   container.appendChild(renderer.domElement);
 
   // Cheerful, Balanced Museum Lighting
-  const ambientLight = new THREE.AmbientLight(0xfffaed, 0.75);
+  const ambientLight = new THREE.AmbientLight(0xfffaed, 0.85);
   scene.add(ambientLight);
 
   // Hemispherical natural sky bounce: clear daylight sky from above, warm gold bounce from floor
-  const hemiLight = new THREE.HemisphereLight(0xbae6fd, 0xfef3c7, 0.65);
+  const hemiLight = new THREE.HemisphereLight(0xbae6fd, 0xfef3c7, 0.7);
   scene.add(hemiLight);
 
-  // Central Rotunda Daylight Oculus Sun
-  const rotundaSun = new THREE.DirectionalLight(0xffedd5, 1.25);
+  // Central Rotunda Daylight Oculus Sun — optimized shadow resolution & camera frustum
+  const rotundaSun = new THREE.DirectionalLight(0xffedd5, 1.2);
   rotundaSun.position.set(0, 18, 0);
   rotundaSun.castShadow = true;
-  rotundaSun.shadow.mapSize.width = 2048;
-  rotundaSun.shadow.mapSize.height = 2048;
-  rotundaSun.shadow.bias = -0.0001;
+  rotundaSun.shadow.mapSize.width = 1024;
+  rotundaSun.shadow.mapSize.height = 1024;
+  rotundaSun.shadow.camera.near = 1;
+  rotundaSun.shadow.camera.far = 30;
+  rotundaSun.shadow.camera.left = -22;
+  rotundaSun.shadow.camera.right = 22;
+  rotundaSun.shadow.camera.top = 22;
+  rotundaSun.shadow.camera.bottom = -22;
+  rotundaSun.shadow.bias = -0.0005;
   scene.add(rotundaSun);
 
   // Polished Modern Carrara White Marble Floor
@@ -920,8 +935,8 @@ export function initMuseumScene(
     });
   });
 
-  // Floating Chronos Time Particles ("Serbuk Waktu")
-  const particleCount = 350;
+  // Floating Chronos Time Particles ("Serbuk Waktu") - optimized count
+  const particleCount = 120;
   const particleGeo = new THREE.BufferGeometry();
   const particlePositions = new Float32Array(particleCount * 3);
   const particleColors = new Float32Array(particleCount * 3);
@@ -1029,13 +1044,17 @@ export function initMuseumScene(
   const pedestalPlinth = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
   const pedestalBrassBase = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.2 });
   const pedestalTopMarble = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15, metalness: 0.05 });
-  const glassMat = new THREE.MeshPhysicalMaterial({
+  // Lightweight Crisp Vitrine Display Case Material
+  // MeshStandardMaterial with opacity bypasses heavy transmission framebuffer copies
+  const glassMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.22,
-    roughness: 0.04,
-    transmission: 0.96,
+    opacity: 0.28,
+    roughness: 0.08,
+    metalness: 0.1,
   });
+
+  const exhibitSpotlights: { spot: THREE.SpotLight; pos: [number, number, number] }[] = [];
 
   exhibits.forEach((exhibit) => {
     const [px, py, pz] = exhibit.pedestalPosition;
@@ -1081,15 +1100,16 @@ export function initMuseumScene(
     artifact.castShadow = true;
     pGroup.add(artifact);
 
-    // Dedicated Bright Directional Spotlight
-    const spot = new THREE.SpotLight(exhibit.accentColor, 2.8, 10, Math.PI / 4.5, 0.45);
+    // Dedicated Bright Directional Spotlight (Optimized shadow: off by default to save 12 render passes)
+    const spot = new THREE.SpotLight(exhibit.accentColor, 3.2, 11, Math.PI / 4.2, 0.4);
     spot.position.set(px, 6.8, pz);
     spot.target = top;
-    spot.castShadow = true;
+    spot.castShadow = false; // Turned off on spotlights; rotunda sun provides sharp realistic shadows for entire room
     scene.add(spot);
+    exhibitSpotlights.push({ spot, pos: [px, py, pz] });
 
     // Luminous Floor Teleport / Interaction Halo Waypoint
-    const haloGeo = new THREE.RingGeometry(1.3, 1.55, 32);
+    const haloGeo = new THREE.RingGeometry(1.3, 1.55, 24);
     const haloMat = new THREE.MeshBasicMaterial({
       color: new THREE.Color(exhibit.accentColor),
       side: THREE.DoubleSide,
@@ -1202,6 +1222,9 @@ export function initMuseumScene(
     if (lookAt) {
       targetLookAt = new THREE.Vector3(...lookAt);
     }
+    if (onTeleportStart) {
+      onTeleportStart(position, lookAt);
+    }
   };
 
   // Animation Loop Update
@@ -1256,8 +1279,47 @@ export function initMuseumScene(
       }
     }
 
+    // Dynamic Distance-based Spotlight Culling:
+    // Only keep spotlights visible if player/camera is within 18 meters
+    const camX = camera.position.x;
+    const camZ = camera.position.z;
+    for (let i = 0; i < exhibitSpotlights.length; i++) {
+      const item = exhibitSpotlights[i];
+      const dx = camX - item.pos[0];
+      const dz = camZ - item.pos[2];
+      const distSq = dx * dx + dz * dz;
+      // In fast mode, keep closer threshold (12m), in balanced 18m, in high 26m
+      const maxDistSq = currentQuality === 'fast' ? 144 : currentQuality === 'balanced' ? 324 : 676;
+      item.spot.visible = distSq < maxDistSq;
+    }
+
     renderer.render(scene, camera);
   };
+
+  const setQuality = (quality: GraphicQuality) => {
+    currentQuality = quality;
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    const pr = getQualityPixelRatio(quality);
+    renderer.setPixelRatio(pr);
+    renderer.setSize(w, h);
+
+    if (quality === 'fast') {
+      renderer.shadowMap.enabled = false;
+      rotundaSun.castShadow = false;
+      particleSystem.visible = false;
+    } else if (quality === 'balanced') {
+      renderer.shadowMap.enabled = true;
+      rotundaSun.castShadow = true;
+      particleSystem.visible = true;
+    } else {
+      renderer.shadowMap.enabled = true;
+      rotundaSun.castShadow = true;
+      particleSystem.visible = true;
+    }
+  };
+
+  const getQuality = () => currentQuality;
 
   const cleanup = () => {
     window.removeEventListener('resize', handleResize);
@@ -1278,5 +1340,8 @@ export function initMuseumScene(
     cleanup,
     update,
     teleportTo,
+    isTeleporting: () => targetCamPos !== null,
+    setQuality,
+    getQuality,
   };
 }

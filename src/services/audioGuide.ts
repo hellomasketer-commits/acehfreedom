@@ -301,6 +301,50 @@ export class AudioGuideService {
     }
   }
 
+  // Play subtle cinematic swoosh with harmonic chime during camera transition
+  public playCinematicSwoosh() {
+    this.initAudioContext();
+    if (!this.audioCtx) return;
+
+    try {
+      const now = this.audioCtx.currentTime;
+      // Soft filtered frequency sweep
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.35);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.09, now + 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
+
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.7);
+
+      // Soft accompanying overtone chime
+      const chime = this.audioCtx.createOscillator();
+      const chimeGain = this.audioCtx.createGain();
+      chime.type = 'triangle';
+      chime.frequency.setValueAtTime(880, now + 0.1);
+      chimeGain.gain.setValueAtTime(0.001, now + 0.1);
+      chimeGain.gain.linearRampToValueAtTime(0.04, now + 0.2);
+      chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+
+      chime.connect(chimeGain);
+      chimeGain.connect(this.audioCtx.destination);
+
+      chime.start(now + 0.1);
+      chime.stop(now + 0.8);
+    } catch {
+      // Safe ignore
+    }
+  }
+
   public isPlaying(): boolean {
     return (this.synth?.speaking ?? false) || this.isAmbiencePlaying;
   }

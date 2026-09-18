@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { EXHIBITS, MUSEUM_WINGS } from '../data/exhibits';
 import { audioGuide } from '../services/audioGuide';
-import { initMuseumScene, MuseumSceneSetup } from '../services/museum3d';
+import { GraphicQuality, initMuseumScene, MuseumSceneSetup } from '../services/museum3d';
 import { Exhibit, VRMode } from '../types/museum';
-import { Compass, Eye, Headphones, Sparkles, Volume2, VolumeX, Move, Glasses, BookOpen } from 'lucide-react';
+import { Compass, Eye, Headphones, Sparkles, Volume2, VolumeX, Move, Glasses, BookOpen, Layers, Zap, Gauge } from 'lucide-react';
 
 interface MuseumViewportProps {
   onSelectExhibit: (exhibitId: string) => void;
@@ -42,6 +42,131 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
   const [hoveredExhibit, setHoveredExhibit] = useState<Exhibit | null>(null);
   const [currentWingName, setCurrentWingName] = useState('Meuligoe Agung & Monumen Halimon');
   const [supportsWebXR, setSupportsWebXR] = useState(false);
+  const [graphicQuality, setGraphicQuality] = useState<GraphicQuality>('balanced');
+
+  // Cinematic Fade and Slide Transition State
+  const [transitionPhase, setTransitionPhase] = useState<'idle' | 'fade-in' | 'fade-out'>('idle');
+  const [transitionData, setTransitionData] = useState<{
+    badge: string;
+    title: string;
+    subtitle: string;
+    category: string;
+    accentColor: string;
+    direction: 'left' | 'right';
+  } | null>(null);
+  const transitionTimerRef = useRef<number | null>(null);
+  const triggerTransitionRef = useRef<((pos: [number, number, number], lookAt?: [number, number, number]) => void) | null>(null);
+
+  // Transition trigger callback
+  const triggerCinematicTransition = useCallback(
+    (pos: [number, number, number], lookAt?: [number, number, number]) => {
+      // Determine what exhibit or wing is being switched to
+      let matchedExhibit: Exhibit | null = null;
+      for (const exh of EXHIBITS) {
+        const dx = pos[0] - exh.pedestalPosition[0];
+        const dz = pos[2] - exh.pedestalPosition[2];
+        if (Math.hypot(dx, dz) < 3.8) {
+          matchedExhibit = exh;
+          break;
+        }
+      }
+
+      let matchedWing: (typeof MUSEUM_WINGS)[0] | null = null;
+      if (!matchedExhibit) {
+        for (const wing of MUSEUM_WINGS) {
+          const dx = pos[0] - wing.entrancePosition[0];
+          const dz = pos[2] - wing.entrancePosition[2];
+          if (Math.hypot(dx, dz) < 4.0) {
+            matchedWing = wing;
+            break;
+          }
+        }
+      }
+
+      const isCenter = Math.hypot(pos[0], pos[2]) < 2.5;
+
+      let badge = 'BERPINDAH LOKASI';
+      let title = 'Museum Kemerdekaan';
+      let subtitle = 'Eksplorasi Sejarah Aceh';
+      let category = 'Navigasi Museum';
+      let accentColor = '#f59e0b';
+
+      if (matchedExhibit) {
+        badge = `ARTEFAK • ${matchedExhibit.era}`;
+        title = matchedExhibit.name;
+        subtitle = `${matchedExhibit.year} — ${matchedExhibit.nativeTitle || matchedExhibit.provenance}`;
+        category = 'Koleksi Pusaka';
+        accentColor = matchedExhibit.accentColor;
+      } else if (matchedWing) {
+        badge = `SAYAP GALERI • ${matchedWing.eraPeriod}`;
+        title = matchedWing.name;
+        subtitle = matchedWing.subtitle;
+        category = 'Lorong Waktu Sejarah';
+        accentColor = matchedWing.bannerColor || '#f59e0b';
+      } else if (isCenter) {
+        badge = 'ROTUNDA UTAMA';
+        title = 'Meuligoe Agung & Monumen Halimon';
+        subtitle = 'Titik Temu Kedaulatan & Persatuan 4 Era';
+        category = 'Aula Pusat';
+        accentColor = '#fbbf24';
+      }
+
+      // Determine slide direction based on target position relative to current player position
+      const currX = playerPosition.current[0];
+      const direction: 'left' | 'right' = pos[0] >= currX ? 'right' : 'left';
+
+      setTransitionData({
+        badge,
+        title,
+        subtitle,
+        category,
+        accentColor,
+        direction,
+      });
+
+      // Synchronize lookAt camera rotation ref so subsequent mouse/touch drag continues seamlessly
+      if (lookAt) {
+        const dx = lookAt[0] - pos[0];
+        const dz = lookAt[2] - pos[2];
+        const targetYaw = Math.atan2(-dx, -dz);
+        cameraRotation.current.yaw = targetYaw;
+        cameraRotation.current.pitch = 0;
+      }
+
+      // Play cinematic harmonic swoosh
+      audioGuide.playCinematicSwoosh();
+
+      // Trigger phase 1: Fade-in & subtle slide
+      setTransitionPhase('fade-in');
+
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+
+      // Phase 2: Start slide-away and fade-out at 380ms
+      transitionTimerRef.current = window.setTimeout(() => {
+        setTransitionPhase('fade-out');
+
+        // Phase 3: Complete transition at 760ms
+        transitionTimerRef.current = window.setTimeout(() => {
+          setTransitionPhase('idle');
+        }, 380);
+      }, 380);
+    },
+    []
+  );
+
+  useEffect(() => {
+    triggerTransitionRef.current = triggerCinematicTransition;
+  }, [triggerCinematicTransition]);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
 
   // Check WebXR support
   useEffect(() => {
@@ -76,6 +201,9 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
         } else {
           setHoveredExhibit(null);
         }
+      },
+      (pos, lookAt) => {
+        triggerTransitionRef.current?.(pos, lookAt);
       }
     );
 
@@ -91,29 +219,37 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
 
       setup.update(delta);
 
-      // Handle WASD Keyboard walking
+      // Handle WASD Keyboard walking (pause manual walking during automated camera teleportation)
       const camera = setup.camera;
       const speed = 6.5 * delta;
 
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward);
-      forward.y = 0;
-      forward.normalize();
+      const isWalking =
+        keysPressed.current['KeyW'] || keysPressed.current['ArrowUp'] ||
+        keysPressed.current['KeyS'] || keysPressed.current['ArrowDown'] ||
+        keysPressed.current['KeyA'] || keysPressed.current['ArrowLeft'] ||
+        keysPressed.current['KeyD'] || keysPressed.current['ArrowRight'];
 
-      const right = new THREE.Vector3();
-      right.crossVectors(camera.up, forward).normalize().negate();
+      if (isWalking && !setup.isTeleporting()) {
+        const forward = new THREE.Vector3();
+        camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
 
-      if (keysPressed.current['KeyW'] || keysPressed.current['ArrowUp']) {
-        camera.position.addScaledVector(forward, speed);
-      }
-      if (keysPressed.current['KeyS'] || keysPressed.current['ArrowDown']) {
-        camera.position.addScaledVector(forward, -speed);
-      }
-      if (keysPressed.current['KeyA'] || keysPressed.current['ArrowLeft']) {
-        camera.position.addScaledVector(right, -speed);
-      }
-      if (keysPressed.current['KeyD'] || keysPressed.current['ArrowRight']) {
-        camera.position.addScaledVector(right, speed);
+        const right = new THREE.Vector3();
+        right.crossVectors(camera.up, forward).normalize().negate();
+
+        if (keysPressed.current['KeyW'] || keysPressed.current['ArrowUp']) {
+          camera.position.addScaledVector(forward, speed);
+        }
+        if (keysPressed.current['KeyS'] || keysPressed.current['ArrowDown']) {
+          camera.position.addScaledVector(forward, -speed);
+        }
+        if (keysPressed.current['KeyA'] || keysPressed.current['ArrowLeft']) {
+          camera.position.addScaledVector(right, -speed);
+        }
+        if (keysPressed.current['KeyD'] || keysPressed.current['ArrowRight']) {
+          camera.position.addScaledVector(right, speed);
+        }
       }
 
       // Keep player eye height and clamp within museum perimeter (-28 to +28)
@@ -211,7 +347,6 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
   useEffect(() => {
     if (teleportTarget && sceneSetupRef.current) {
       sceneSetupRef.current.teleportTo(teleportTarget.pos, teleportTarget.lookAt);
-      audioGuide.playAcousticChime(523.25);
     }
   }, [teleportTarget]);
 
@@ -308,8 +443,118 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* 3D WebGL Canvas Injection */}
-      <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      {/* 3D WebGL Canvas Injection with subtle cinematic slide & scale */}
+      <div
+        ref={containerRef}
+        className={`w-full h-full cursor-grab active:cursor-grabbing transition-all duration-700 ease-out ${
+          transitionPhase === 'fade-in'
+            ? transitionData?.direction === 'right'
+              ? 'scale-[1.02] -translate-x-3 filter brightness-105'
+              : 'scale-[1.02] translate-x-3 filter brightness-105'
+            : transitionPhase === 'fade-out'
+            ? 'scale-100 translate-x-0 filter brightness-100'
+            : 'scale-100 translate-x-0 filter brightness-100'
+        }`}
+      />
+
+      {/* Cinematic Fade and Slide Transition Layer */}
+      <div
+        id="museum-cinematic-transition-overlay"
+        className={`absolute inset-0 z-40 pointer-events-none flex flex-col justify-between overflow-hidden transition-opacity duration-300 ease-in-out ${
+          transitionPhase !== 'idle' ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{
+          background:
+            transitionPhase !== 'idle'
+              ? 'radial-gradient(ellipse at center, rgba(15, 23, 42, 0.45) 0%, rgba(10, 10, 15, 0.78) 100%)'
+              : 'transparent',
+          backdropFilter: transitionPhase !== 'idle' ? 'blur(3px)' : 'none',
+          WebkitBackdropFilter: transitionPhase !== 'idle' ? 'blur(3px)' : 'none',
+        }}
+      >
+        {/* Top Cinematic Letterbox Bar */}
+        <div
+          className={`w-full h-8 sm:h-12 bg-neutral-950/90 border-b border-amber-500/25 flex items-center justify-between px-4 sm:px-8 transition-transform duration-500 ease-out ${
+            transitionPhase === 'fade-in' ? 'translate-y-0' : '-translate-y-full'
+          }`}
+        >
+          <div className="flex items-center gap-2 text-[10px] sm:text-xs tracking-widest text-amber-400 font-mono font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+            <span>TRANSISI LORONG WAKTU</span>
+          </div>
+          <div className="text-[10px] sm:text-xs text-neutral-400 tracking-wider font-mono">
+            ACEH INSTITUTE ARCHIVE
+          </div>
+        </div>
+
+        {/* Center Cinematic Title Card & Sliding Light Streak */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          {transitionData && (
+            <div
+              className={`relative max-w-md w-full bg-neutral-950/90 backdrop-blur-2xl border border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl text-center overflow-hidden transition-all duration-500 ${
+                transitionPhase === 'fade-in'
+                  ? 'opacity-100 scale-100 translate-y-0 translate-x-0'
+                  : transitionPhase === 'fade-out'
+                  ? transitionData.direction === 'right'
+                    ? 'opacity-0 scale-95 translate-x-12 translate-y-1'
+                    : 'opacity-0 scale-95 -translate-x-12 translate-y-1'
+                  : 'opacity-0 scale-95 -translate-x-6'
+              }`}
+            >
+              {/* Animated Anamorphic Light Streak Beam */}
+              <div
+                className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent transition-all duration-700 ${
+                  transitionPhase === 'fade-in' ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+                }`}
+              />
+
+              {/* Badge & Category */}
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-sm"
+                  style={{
+                    backgroundColor: `${transitionData.accentColor}25`,
+                    color: transitionData.accentColor,
+                    border: `1px solid ${transitionData.accentColor}60`,
+                  }}
+                >
+                  <Sparkles className="w-3 h-3 animate-spin" />
+                  {transitionData.badge}
+                </span>
+              </div>
+
+              {/* Destination Name */}
+              <h2 className="text-lg sm:text-2xl font-bold text-white font-serif tracking-tight mb-1.5">
+                {transitionData.title}
+              </h2>
+
+              {/* Subtitle / Era Description */}
+              <p className="text-xs sm:text-sm text-neutral-300 font-medium max-w-sm mx-auto line-clamp-2">
+                {transitionData.subtitle}
+              </p>
+
+              {/* Subtle sliding indicator dot stream */}
+              <div className="mt-3.5 pt-3 border-t border-white/10 flex items-center justify-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-[11px] text-amber-200/80 font-mono tracking-wider">
+                  Menuju Titik Eksplorasi...
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Cinematic Letterbox Bar */}
+        <div
+          className={`w-full h-8 sm:h-12 bg-neutral-950/90 border-t border-amber-500/25 flex items-center justify-center px-4 sm:px-8 transition-transform duration-500 ease-out ${
+            transitionPhase === 'fade-in' ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        >
+          <div className="text-[10px] sm:text-xs text-neutral-400 tracking-wider font-mono">
+            GERAKAN KAMERA KINEMATIK • MENJELAJAHI BUKTI SEJARAH
+          </div>
+        </div>
+      </div>
 
       {/* VR Stereoscopic Center Divider */}
       {vrMode === 'stereoscopic' && (
@@ -357,8 +602,31 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
         </div>
       </div>
 
-      {/* Top Right Controls: VR Mode & Soundscape Toggle */}
+      {/* Top Right Controls: Graphic Quality, VR Mode & Soundscape Toggle */}
       <div className="absolute top-2.5 sm:top-4 right-2.5 sm:right-4 z-20 flex items-center gap-1.5 sm:gap-2">
+        {/* Graphics Performance Switcher */}
+        <button
+          id="btn-toggle-quality"
+          onClick={() => {
+            const nextQ: GraphicQuality = graphicQuality === 'balanced' ? 'fast' : graphicQuality === 'fast' ? 'high' : 'balanced';
+            setGraphicQuality(nextQ);
+            sceneSetupRef.current?.setQuality(nextQ);
+          }}
+          title="Ubah Mode Kualitas Grafis (Cepat / Seimbang / Tinggi)"
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 backdrop-blur-md transition-all border min-h-[38px] sm:min-h-[40px] ${
+            graphicQuality === 'fast'
+              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+              : graphicQuality === 'balanced'
+              ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+              : 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+          }`}
+        >
+          <Zap className="w-4 h-4 text-amber-400" />
+          <span className="hidden sm:inline font-mono">
+            {graphicQuality === 'fast' ? 'Cepat (60 FPS)' : graphicQuality === 'balanced' ? 'Seimbang' : 'Ultra'}
+          </span>
+        </button>
+
         <button
           id="btn-toggle-ambience"
           onClick={onToggleAmbientSound}
