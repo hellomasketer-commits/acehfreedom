@@ -12,58 +12,79 @@ export interface MuseumSceneSetup {
   teleportTo: (position: [number, number, number], lookAt?: [number, number, number]) => void;
 }
 
-// Procedural texture generator for luxury Acehnese museum marble floor
+// Procedural texture generator for modern luxury white & gold Carrara museum marble floor
 function createMarbleTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Deep obsidian charcoal background
-  ctx.fillStyle = '#141316';
+  // Bright luxury Italian Carrara white-cream marble base
+  const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
+  bgGrad.addColorStop(0, '#fafaf9');
+  bgGrad.addColorStop(0.5, '#f5f5f4');
+  bgGrad.addColorStop(1, '#f8fafc');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 512, 512);
 
-  // Golden and emerald marble veins
-  ctx.strokeStyle = 'rgba(217, 119, 6, 0.16)';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < 22; i++) {
-    ctx.beginPath();
-    let x = Math.random() * 512;
-    let y = Math.random() * 512;
-    ctx.moveTo(x, y);
-    for (let j = 0; j < 6; j++) {
-      x += (Math.random() - 0.5) * 110;
-      y += (Math.random() - 0.5) * 110;
-      ctx.lineTo(x, y);
-    }
-    ctx.stroke();
+  // Soft subtle warm gray marble clouds
+  for (let i = 0; i < 8; i++) {
+    const radGrad = ctx.createRadialGradient(
+      Math.random() * 512, Math.random() * 512, 10,
+      Math.random() * 512, Math.random() * 512, 180
+    );
+    radGrad.addColorStop(0, 'rgba(226, 232, 240, 0.45)');
+    radGrad.addColorStop(1, 'rgba(248, 250, 252, 0)');
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, 512, 512);
   }
 
-  // Emerald hairline veins
-  ctx.strokeStyle = 'rgba(16, 185, 129, 0.08)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 12; i++) {
+  // Golden and amber royal marble veins
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.24)';
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < 18; i++) {
     ctx.beginPath();
     let x = Math.random() * 512;
     let y = Math.random() * 512;
     ctx.moveTo(x, y);
     for (let j = 0; j < 5; j++) {
-      x += (Math.random() - 0.5) * 130;
-      y += (Math.random() - 0.5) * 130;
+      x += (Math.random() - 0.5) * 120;
+      y += (Math.random() - 0.5) * 120;
       ctx.lineTo(x, y);
     }
     ctx.stroke();
   }
 
-  // Border tile lines
-  ctx.strokeStyle = 'rgba(234, 179, 8, 0.12)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(0, 0, 512, 512);
+  // Delicate champagne gold hairline veins
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.32)';
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < 14; i++) {
+    ctx.beginPath();
+    let x = Math.random() * 512;
+    let y = Math.random() * 512;
+    ctx.moveTo(x, y);
+    for (let j = 0; j < 6; j++) {
+      x += (Math.random() - 0.5) * 100;
+      y += (Math.random() - 0.5) * 100;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Polished golden brass tile inlay borders
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(4, 4, 504, 504);
+
+  // Inset inner gold border
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(16, 16, 480, 480);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(16, 16);
+  texture.repeat.set(12, 12);
   return texture;
 }
 
@@ -613,8 +634,10 @@ export function initMuseumScene(
   onHoverExhibit: (exhibitId: string | null) => void
 ): MuseumSceneSetup {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a090c);
-  scene.fog = new THREE.FogExp2(0x0a090c, 0.022);
+  // Modern, cheerful, luminous sky atrium background
+  scene.background = new THREE.Color(0xf0f7ff);
+  // Airy, subtle atmospheric depth — crisp, clear and inviting
+  scene.fog = new THREE.FogExp2(0xf1f5f9, 0.005);
 
   const width = container.clientWidth || window.innerWidth;
   const height = container.clientHeight || window.innerHeight;
@@ -629,19 +652,23 @@ export function initMuseumScene(
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.25; // Bright, luminous modern gallery exposure
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.xr.enabled = true;
 
   container.appendChild(renderer.domElement);
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xfffbeb, 0.45);
+  // Cheerful, Balanced Museum Lighting
+  const ambientLight = new THREE.AmbientLight(0xfffaed, 0.75);
   scene.add(ambientLight);
 
-  // Central Rotunda Skylight
-  const rotundaSun = new THREE.DirectionalLight(0xfef3c7, 0.95);
+  // Hemispherical natural sky bounce: clear daylight sky from above, warm gold bounce from floor
+  const hemiLight = new THREE.HemisphereLight(0xbae6fd, 0xfef3c7, 0.65);
+  scene.add(hemiLight);
+
+  // Central Rotunda Daylight Oculus Sun
+  const rotundaSun = new THREE.DirectionalLight(0xffedd5, 1.25);
   rotundaSun.position.set(0, 18, 0);
   rotundaSun.castShadow = true;
   rotundaSun.shadow.mapSize.width = 2048;
@@ -649,40 +676,58 @@ export function initMuseumScene(
   rotundaSun.shadow.bias = -0.0001;
   scene.add(rotundaSun);
 
-  // Museum Floor
+  // Polished Modern Carrara White Marble Floor
   const marbleTex = createMarbleTexture();
   const floorGeo = new THREE.PlaneGeometry(60, 60);
   const floorMat = new THREE.MeshStandardMaterial({
     map: marbleTex,
-    roughness: 0.25,
-    metalness: 0.15,
+    roughness: 0.16, // High polish, luminous reflections
+    metalness: 0.08,
   });
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  // Ceiling & Classical Vaulted Roof
+  // Modern Architectural Ceiling with Central Skylight Oculus
   const ceilingGeo = new THREE.PlaneGeometry(60, 60);
   const ceilingMat = new THREE.MeshStandardMaterial({
-    color: 0x121115,
-    roughness: 0.9,
+    color: 0xf8fafc,
+    roughness: 0.7,
   });
   const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
   ceiling.position.y = 8;
   ceiling.rotation.x = Math.PI / 2;
   scene.add(ceiling);
 
-  // Perimeter Walls with dark rich wood wainscot
+  // Grand Skylight Oculus Dome in Center Ceiling
+  const oculusRing = new THREE.Mesh(
+    new THREE.TorusGeometry(5.2, 0.35, 16, 48),
+    new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 })
+  );
+  oculusRing.position.set(0, 7.95, 0);
+  oculusRing.rotation.x = Math.PI / 2;
+  scene.add(oculusRing);
+
+  // Luminous blue sky glass disk in Oculus
+  const oculusGlass = new THREE.Mesh(
+    new THREE.CircleGeometry(5.0, 32),
+    new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+  );
+  oculusGlass.position.set(0, 7.97, 0);
+  oculusGlass.rotation.x = Math.PI / 2;
+  scene.add(oculusGlass);
+
+  // Contemporary Museum Gallery Walls (Bright, Warm Alabaster White)
   const wallMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1921,
-    roughness: 0.85,
+    color: 0xf4f4f6,
+    roughness: 0.65,
   });
   const wallPositions: [number, number, number, number, number][] = [
-    [0, 4, -30, 60, 8], // North
-    [0, 4, 30, 60, 8],  // South
-    [-30, 4, 0, 8, 60], // West
-    [30, 4, 0, 8, 60],  // East
+    [0, 4, -30, 60, 8], // North (Kesultanan)
+    [0, 4, 30, 60, 8],  // South (Acheh Institute)
+    [-30, 4, 0, 8, 60], // West (Belantara)
+    [30, 4, 0, 8, 60],  // East (Perang Semesta)
   ];
   wallPositions.forEach(([x, y, z, w, h]) => {
     const isEW = Math.abs(x) === 30;
@@ -690,39 +735,74 @@ export function initMuseumScene(
     const wall = new THREE.Mesh(wallGeo, wallMat);
     wall.position.set(x, y, z);
     scene.add(wall);
+
+    // Warm Gold Picture Rail Frieze at top of walls
+    const railMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.25 });
+    const railGeo = isEW ? new THREE.BoxGeometry(1.05, 0.15, 60) : new THREE.BoxGeometry(w, 0.15, 1.05);
+    const rail = new THREE.Mesh(railGeo, railMat);
+    rail.position.set(x, 7.2, z);
+    scene.add(rail);
+
+    // Sleek Architectural Baseboard at bottom of walls
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4 });
+    const baseGeo = isEW ? new THREE.BoxGeometry(1.04, 0.25, 60) : new THREE.BoxGeometry(w, 0.25, 1.04);
+    const baseBoard = new THREE.Mesh(baseGeo, baseMat);
+    baseBoard.position.set(x, 0.125, z);
+    scene.add(baseBoard);
   });
 
-  // Central Rotunda Dais: Monumen Kemerdekaan Halimon
+  // Central Rotunda Dais: Monumen Kemerdekaan Halimon (Radiant Gold & Royal Lapis)
   const compassGeo = new THREE.CylinderGeometry(3.6, 3.9, 0.25, 8);
   const compassMat = new THREE.MeshStandardMaterial({
-    color: 0xd97706,
+    color: 0xf59e0b,
     metalness: 0.85,
-    roughness: 0.25,
+    roughness: 0.2,
   });
   const compass = new THREE.Mesh(compassGeo, compassMat);
   compass.position.set(0, 0.12, 0);
   scene.add(compass);
 
+  // Inset Lapis & Gold Star in dais
+  const compassCenter = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.2, 2.2, 0.28, 32),
+    new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.3, metalness: 0.4 })
+  );
+  compassCenter.position.set(0, 0.14, 0);
+  scene.add(compassCenter);
+
   // Center Emblem: Dual Royal Lions & Crescent Star (Lambang Negara Aceh Sumatra)
   const centerArmillary = new THREE.Group();
   for (let i = 0; i < 3; i++) {
     const armRing = new THREE.Mesh(
-      new THREE.TorusGeometry(1.25, 0.045, 12, 32),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.18 })
+      new THREE.TorusGeometry(1.3, 0.05, 16, 36),
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.92, roughness: 0.15 })
     );
     armRing.rotation.set((i * Math.PI) / 3, (i * Math.PI) / 4, 0);
     centerArmillary.add(armRing);
   }
   // Central golden crescent star in monument
   const centerStar = new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 16, 16),
-    new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.2, metalness: 0.5 })
+    new THREE.SphereGeometry(0.38, 24, 24),
+    new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.15, metalness: 0.7 })
   );
   centerArmillary.add(centerStar);
-  centerArmillary.position.set(0, 2.3, 0);
+  centerArmillary.position.set(0, 2.4, 0);
   scene.add(centerArmillary);
 
-  // Classical Doric / Roman Columns along gallery wings
+  // Upward Luminous Light Pillar in Center Monument
+  const beaconPillar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3, 0.8, 7.6, 16),
+    new THREE.MeshBasicMaterial({
+      color: 0xfde047,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+    })
+  );
+  beaconPillar.position.set(0, 4.0, 0);
+  scene.add(beaconPillar);
+
+  // Modern Architectural Fluted White Columns with Brass Collars
   const columnPositions: [number, number][] = [
     [-6, -6], [-6, -14], [-6, -22],
     [6, -6], [6, -14], [6, -22],
@@ -731,70 +811,230 @@ export function initMuseumScene(
     [-14, -6], [-22, -6], [14, -6], [22, -6],
     [-14, 6], [-22, 6], [14, 6], [22, 6],
   ];
-  const columnMat = new THREE.MeshStandardMaterial({
-    color: 0x24222a,
-    roughness: 0.4,
+  const columnShaftMat = new THREE.MeshStandardMaterial({
+    color: 0xfafafa,
+    roughness: 0.22,
+  });
+  const columnBrassMat = new THREE.MeshStandardMaterial({
+    color: 0xf59e0b,
+    metalness: 0.88,
+    roughness: 0.2,
   });
   columnPositions.forEach(([cx, cz]) => {
-    const colBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.8), columnMat);
-    colBase.position.set(cx, 0.15, cz);
-    const colShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 7.4, 20), columnMat);
-    colShaft.position.set(cx, 4.0, cz);
-    const colCap = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.8), columnMat);
-    colCap.position.set(cx, 7.85, cz);
-    scene.add(colBase, colShaft, colCap);
+    // Brass Base Plinth
+    const colBase = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.25, 0.85), columnBrassMat);
+    colBase.position.set(cx, 0.125, cz);
+
+    // Pristine White Shaft
+    const colShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 7.4, 24), columnShaftMat);
+    colShaft.position.set(cx, 3.95, cz);
+
+    // Mid Brass Accent Ring
+    const colRing = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.035, 12, 24), columnBrassMat);
+    colRing.position.set(cx, 4.0, cz);
+    colRing.rotation.x = Math.PI / 2;
+
+    // Brass Capital
+    const colCap = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.25, 0.85), columnBrassMat);
+    colCap.position.set(cx, 7.825, cz);
+
+    scene.add(colBase, colShaft, colRing, colCap);
   });
 
-  // Entrance Banners for each Wing
-  const createBanner = (text: string, sub: string, colorHex: number, pos: [number, number, number], rotY: number) => {
+  // ==========================================
+  // LORONG WAKTU: Time Tunnel Portal Arches & Chrono Stream
+  // ==========================================
+  const timePortalArches: THREE.Mesh[] = [];
+
+  // Config for each of the 4 Chronological Wings:
+  // 1. North: Kesultanan (1607-1636) - Radiant Golden Amber
+  // 2. East: Perang Semesta (1873-1911) - Energetic Ruby Coral
+  // 3. South: Acheh Institute (1976-1979) - Electric Cyan Azure
+  // 4. West: Belantara & Freedom (1979-1982) - Vibrant Emerald Mint
+  const wingTimeConfigs = [
+    { dir: 'north', colorHex: 0xf59e0b, secondaryHex: 0xfde047, axis: 'z', sign: -1, label: '1607 — 1636' },
+    { dir: 'east', colorHex: 0xef4444, secondaryHex: 0xfca5a5, axis: 'x', sign: 1, label: '1873 — 1911' },
+    { dir: 'south', colorHex: 0x0284c7, secondaryHex: 0x38bdf8, axis: 'z', sign: 1, label: '1976 — 1979' },
+    { dir: 'west', colorHex: 0x10b981, secondaryHex: 0x6ee7b7, axis: 'x', sign: -1, label: '1979 — 1982' },
+  ];
+
+  wingTimeConfigs.forEach((wing) => {
+    // Create 3 glowing time portal arches along each corridor (distance ~8m, ~16m, ~24m)
+    [8, 16, 24].forEach((dist, archIdx) => {
+      const isZ = wing.axis === 'z';
+      const pos: [number, number, number] = isZ ? [0, 4.0, dist * wing.sign] : [dist * wing.sign, 4.0, 0];
+
+      // Time Portal Arch Structure (Glowing neon arch frame)
+      const archRadius = 4.2 - archIdx * 0.15;
+      const archTube = 0.07;
+      const archGeo = new THREE.TorusGeometry(archRadius, archTube, 16, 32, Math.PI);
+      const archMat = new THREE.MeshBasicMaterial({
+        color: archIdx % 2 === 0 ? wing.colorHex : wing.secondaryHex,
+        transparent: true,
+        opacity: 0.78,
+      });
+      const archMesh = new THREE.Mesh(archGeo, archMat);
+      archMesh.position.set(...pos);
+      if (!isZ) {
+        archMesh.rotation.y = Math.PI / 2;
+      }
+      scene.add(archMesh);
+      timePortalArches.push(archMesh);
+
+      // Vertical Portal Light Pillars on left and right sides
+      [-archRadius, archRadius].forEach((sideOffset) => {
+        const pillarX = isZ ? sideOffset : pos[0];
+        const pillarZ = isZ ? pos[2] : sideOffset;
+        const beam = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04, 0.04, 8, 12),
+          new THREE.MeshBasicMaterial({ color: wing.secondaryHex, transparent: true, opacity: 0.55 })
+        );
+        beam.position.set(pillarX, 4.0, pillarZ);
+        scene.add(beam);
+      });
+    });
+
+    // Floor Time-Stream Neon Runner: Luminous guide ribbon running down the center of each corridor
+    const isZ = wing.axis === 'z';
+    const streamLen = 26;
+    const streamGeo = isZ
+      ? new THREE.PlaneGeometry(0.4, streamLen)
+      : new THREE.PlaneGeometry(streamLen, 0.4);
+    const streamMat = new THREE.MeshBasicMaterial({
+      color: wing.colorHex,
+      transparent: true,
+      opacity: 0.7,
+      side: THREE.DoubleSide,
+    });
+    const stream = new THREE.Mesh(streamGeo, streamMat);
+    const streamCenter = 15 * wing.sign;
+    stream.position.set(isZ ? 0 : streamCenter, 0.025, isZ ? streamCenter : 0);
+    stream.rotation.x = -Math.PI / 2;
+    scene.add(stream);
+
+    // Warm Corridor Ambient Point Lights to bathe each corridor in inviting light
+    [10, 20].forEach((d) => {
+      const pLight = new THREE.PointLight(wing.colorHex, 1.6, 14, 1.8);
+      pLight.position.set(isZ ? 0 : d * wing.sign, 4.5, isZ ? d * wing.sign : 0);
+      scene.add(pLight);
+    });
+  });
+
+  // Floating Chronos Time Particles ("Serbuk Waktu")
+  const particleCount = 350;
+  const particleGeo = new THREE.BufferGeometry();
+  const particlePositions = new Float32Array(particleCount * 3);
+  const particleColors = new Float32Array(particleCount * 3);
+
+  const themePalette = [
+    new THREE.Color(0xf59e0b), // Golden Kesultanan
+    new THREE.Color(0xef4444), // Ruby Perang
+    new THREE.Color(0x0284c7), // Cyan Acheh Institute
+    new THREE.Color(0x10b981), // Emerald Freedom
+    new THREE.Color(0xffedd5), // Warm Starlight
+  ];
+
+  for (let i = 0; i < particleCount; i++) {
+    // Disperse within museum volume
+    particlePositions[i * 3] = (Math.random() - 0.5) * 54;
+    particlePositions[i * 3 + 1] = 0.5 + Math.random() * 6.8;
+    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 54;
+
+    const chosenColor = themePalette[Math.floor(Math.random() * themePalette.length)];
+    particleColors[i * 3] = chosenColor.r;
+    particleColors[i * 3 + 1] = chosenColor.g;
+    particleColors[i * 3 + 2] = chosenColor.b;
+  }
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+  particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+  const particleMat = new THREE.PointsMaterial({
+    size: 0.18,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+  });
+  const particleSystem = new THREE.Points(particleGeo, particleMat);
+  scene.add(particleSystem);
+
+  // Modern Frosted-Glass Wing Banners with Crisp Typography
+  const createBanner = (text: string, sub: string, era: string, colorHex: number, pos: [number, number, number], rotY: number) => {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
-    canvas.height = 256;
+    canvas.height = 320;
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#0f0e13';
-    ctx.fillRect(0, 0, 1024, 256);
+    // Modern bright frosted glass backdrop
+    const grad = ctx.createLinearGradient(0, 0, 1024, 320);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    grad.addColorStop(1, 'rgba(248, 250, 252, 0.90)');
+    ctx.fillStyle = grad;
+    ctx.roundRect(10, 10, 1004, 300, 24);
+    ctx.fill();
 
-    ctx.strokeStyle = '#d97706';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(12, 12, 1000, 232);
+    // Vibrant Era Header Badge
+    const hexStr = '#' + colorHex.toString(16).padStart(6, '0');
+    ctx.fillStyle = hexStr;
+    ctx.roundRect(40, 36, 260, 44, 14);
+    ctx.fill();
 
-    ctx.fillStyle = '#fef3c7';
-    ctx.font = 'bold 52px "Plus Jakarta Sans", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(text.toUpperCase(), 512, 110);
+    ctx.fillText(`LORONG ${era}`, 170, 67);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '32px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(sub, 512, 175);
+    // Modern border trim
+    ctx.strokeStyle = hexStr;
+    ctx.lineWidth = 6;
+    ctx.roundRect(10, 10, 1004, 300, 24);
+    ctx.stroke();
+
+    // Wing Title
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 44px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(text.toUpperCase(), 40, 145);
+
+    // Subtitle
+    ctx.fillStyle = '#475569';
+    ctx.font = '500 25px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(sub, 40, 205);
+
+    // Chronology Tagline
+    ctx.fillStyle = hexStr;
+    ctx.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('MENJELAJAHI SAKSI BISU SEJARAH • SENTUH ARTEFAK UNTUK INTERAKSI', 40, 260);
 
     const bannerTex = new THREE.CanvasTexture(canvas);
     const banner = new THREE.Mesh(
-      new THREE.PlaneGeometry(6.5, 1.6),
-      new THREE.MeshStandardMaterial({ map: bannerTex, roughness: 0.5, side: THREE.DoubleSide })
+      new THREE.PlaneGeometry(6.8, 2.1),
+      new THREE.MeshStandardMaterial({ map: bannerTex, roughness: 0.3, side: THREE.DoubleSide })
     );
     banner.position.set(...pos);
     banner.rotation.y = rotY;
     scene.add(banner);
   };
 
-  createBanner('Sayap Kesultanan Aceh', 'Era Iskandar Muda & Kedaulatan Internasional', 0xeab308, [-6, 6.2, -14], Math.PI / 2);
-  createBanner('Perang Semesta 1873-1911', 'Syahidnya Kohler, Hikayat Prang Sabil & Dinasti Tiro', 0xef4444, [6, 6.2, -14], -Math.PI / 2);
-  createBanner('Acheh Institute & Deklarasi 1976', 'PBB New York Menuju Puncak Bukit Tjokkan', 0x38bdf8, [-6, 6.2, 14], Math.PI / 2);
-  createBanner('Belantara & The Price of Freedom', 'Arsip Harian Hasan di Tiro & Stasiun Radio Rimba', 0x10b981, [6, 6.2, 14], -Math.PI / 2);
+  createBanner('Sayap Kesultanan Aceh', 'Era Iskandar Muda & Kedaulatan Internasional', '1607 - 1636', 0xf59e0b, [-6, 6.2, -14], Math.PI / 2);
+  createBanner('Perang Semesta 1873-1911', 'Syahidnya Kohler, Hikayat Prang Sabil & Dinasti Tiro', '1873 - 1911', 0xef4444, [6, 6.2, -14], -Math.PI / 2);
+  createBanner('Acheh Institute & Deklarasi 1976', 'PBB New York Menuju Puncak Bukit Tjokkan', '1976 - 1979', 0x0284c7, [-6, 6.2, 14], Math.PI / 2);
+  createBanner('Belantara & The Price of Freedom', 'Arsip Harian Hasan di Tiro & Stasiun Radio Rimba', '1979 - 1982', 0x10b981, [6, 6.2, 14], -Math.PI / 2);
 
-  // Pedestals, Glass Vitrines & 3D Artifacts
+  // Modern Museum Pedestals, Vitrines with Under-Glow & 3D Artifacts
   const pedestalMeshes = new Map<string, THREE.Group>();
   const waypointMeshes: THREE.Mesh[] = [];
 
-  const pedestalWood = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.7 });
-  const pedestalTopMarble = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.3, metalness: 0.2 });
+  // Minimalist Gallery Matte White Plinth
+  const pedestalPlinth = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
+  const pedestalBrassBase = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.2 });
+  const pedestalTopMarble = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15, metalness: 0.05 });
   const glassMat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.25,
-    roughness: 0.08,
-    transmission: 0.92,
+    opacity: 0.22,
+    roughness: 0.04,
+    transmission: 0.96,
   });
 
   exhibits.forEach((exhibit) => {
@@ -803,48 +1043,62 @@ export function initMuseumScene(
     pGroup.position.set(px, py, pz);
     pGroup.userData = { exhibitId: exhibit.id };
 
-    // Pedestal Base
-    const base = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.85, 1.6), pedestalWood);
-    base.position.y = 0.425;
+    // Brass Plinth Foot
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.08, 1.68), pedestalBrassBase);
+    foot.position.y = 0.04;
+    foot.receiveShadow = true;
+    pGroup.add(foot);
+
+    // Sleek White Gallery Plinth
+    const base = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.82, 1.6), pedestalPlinth);
+    base.position.y = 0.45;
     base.castShadow = true;
     base.receiveShadow = true;
     pGroup.add(base);
 
-    // Marble Top
+    // Polished Pure White Marble Slab Top
     const top = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.08, 1.7), pedestalTopMarble);
-    top.position.y = 0.89;
+    top.position.y = 0.90;
     top.receiveShadow = true;
     pGroup.add(top);
 
-    // Glass Display Case Vitrine
+    // Glowing Neon Vitrine Rim Under-Glow
+    const underGlow = new THREE.Mesh(
+      new THREE.BoxGeometry(1.52, 0.04, 1.52),
+      new THREE.MeshBasicMaterial({ color: exhibit.accentColor, transparent: true, opacity: 0.75 })
+    );
+    underGlow.position.y = 0.95;
+    pGroup.add(underGlow);
+
+    // Ultra-Clear Vitrine Display Case
     const vitrine = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.4, 1.5), glassMat);
-    vitrine.position.y = 1.63;
+    vitrine.position.y = 1.66;
     pGroup.add(vitrine);
 
     // Artifact 3D Geometry
     const artifact = createArtifactMesh(exhibit.meshType);
-    artifact.position.y = 0.93;
+    artifact.position.y = 0.98;
     artifact.castShadow = true;
     pGroup.add(artifact);
 
-    // Dedicated Directional Spotlight
-    const spot = new THREE.SpotLight(exhibit.accentColor, 2.4, 9, Math.PI / 5, 0.4);
-    spot.position.set(px, 6.5, pz);
+    // Dedicated Bright Directional Spotlight
+    const spot = new THREE.SpotLight(exhibit.accentColor, 2.8, 10, Math.PI / 4.5, 0.45);
+    spot.position.set(px, 6.8, pz);
     spot.target = top;
     spot.castShadow = true;
     scene.add(spot);
 
-    // Floor Teleport / Interaction Halo Waypoint
+    // Luminous Floor Teleport / Interaction Halo Waypoint
     const haloGeo = new THREE.RingGeometry(1.3, 1.55, 32);
     const haloMat = new THREE.MeshBasicMaterial({
       color: new THREE.Color(exhibit.accentColor),
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.7,
     });
     const halo = new THREE.Mesh(haloGeo, haloMat);
     halo.rotation.x = -Math.PI / 2;
-    halo.position.set(px, 0.02, pz);
+    halo.position.set(px, 0.03, pz);
     halo.userData = { exhibitId: exhibit.id, isWaypoint: true };
     scene.add(halo);
     waypointMeshes.push(halo);
@@ -853,13 +1107,13 @@ export function initMuseumScene(
     pedestalMeshes.set(exhibit.id, pGroup);
   });
 
-  // Central Rotunda Teleport Waypoint
+  // Central Rotunda Teleport Waypoint (Radiant Sunburst)
   const centerHalo = new THREE.Mesh(
-    new THREE.RingGeometry(2.0, 2.3, 32),
-    new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+    new THREE.RingGeometry(2.0, 2.35, 32),
+    new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
   );
   centerHalo.rotation.x = -Math.PI / 2;
-  centerHalo.position.set(0, 0.02, 0);
+  centerHalo.position.set(0, 0.03, 0);
   centerHalo.userData = { isCenterWaypoint: true };
   scene.add(centerHalo);
   waypointMeshes.push(centerHalo);
@@ -957,6 +1211,27 @@ export function initMuseumScene(
 
     // Rotate center armillary monument slowly
     centerArmillary.rotation.y += delta * 0.25;
+
+    // Pulse center beacon light pillar
+    (beaconPillar.material as THREE.MeshBasicMaterial).opacity = 0.14 + Math.sin(time * 1.8) * 0.05;
+
+    // Gently pulse time portal arches along the chronos corridors
+    const archOpacity = 0.72 + Math.sin(time * 2.2) * 0.12;
+    timePortalArches.forEach((arch) => {
+      (arch.material as THREE.MeshBasicMaterial).opacity = archOpacity;
+    });
+
+    // Animate floating chronos particles
+    particleSystem.rotation.y += delta * 0.03;
+    const pPos = particleSystem.geometry.attributes.position;
+    if (pPos) {
+      // Subtle vertical shimmer
+      const arr = pPos.array as Float32Array;
+      for (let i = 0; i < particleCount; i++) {
+        arr[i * 3 + 1] += Math.sin(time * 2.0 + i) * 0.002;
+      }
+      pPos.needsUpdate = true;
+    }
 
     // Gently pulse waypoint halos
     waypointMeshes.forEach((mesh, idx) => {

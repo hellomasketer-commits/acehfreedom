@@ -349,6 +349,12 @@ export const MuseumViewport: React.FC<MuseumViewportProps> = ({
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           <span className="truncate max-w-[200px]">{currentWingName}</span>
         </div>
+
+        {/* Lorong Waktu Chronos Badge */}
+        <div className="hidden lg:flex items-center gap-1.5 bg-neutral-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-amber-400/40 text-xs font-semibold text-amber-200 shadow-md">
+          <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+          <span>Lorong Waktu 4 Era</span>
+        </div>
       </div>
 
       {/* Top Right Controls: VR Mode & Soundscape Toggle */}
