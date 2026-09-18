@@ -13,6 +13,7 @@ import {
   Footprints,
   Info,
   CheckCircle2,
+  Calendar,
 } from 'lucide-react';
 
 interface MuseumControlsProps {
@@ -23,6 +24,8 @@ interface MuseumControlsProps {
   onOpenPassport: () => void;
   stampedCount: number;
   totalExhibits: number;
+  onToggleTimeline?: () => void;
+  isTimelineOpen?: boolean;
 }
 
 export const MuseumControls: React.FC<MuseumControlsProps> = ({
@@ -33,6 +36,8 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
   onOpenPassport,
   stampedCount,
   totalExhibits,
+  onToggleTimeline,
+  isTimelineOpen,
 }) => {
   const [showMinimap, setShowMinimap] = useState(false);
   const [showWingMenu, setShowWingMenu] = useState(false);
@@ -103,11 +108,28 @@ export const MuseumControls: React.FC<MuseumControlsProps> = ({
           title="Paspor Pengunjung & Arsip Stempel Sejarah"
         >
           <Award className="w-4 h-4 text-amber-300" />
-          <span>Paspor Sejarah</span>
+          <span className="hidden sm:inline">Paspor</span>
           <span className="px-1.5 py-0.5 rounded-full bg-black/40 text-[10px] text-amber-200 font-mono">
             {stampedCount}/{totalExhibits}
           </span>
         </button>
+
+        {/* Historical Timeline Trigger */}
+        {onToggleTimeline && (
+          <button
+            id="open-timeline-btn"
+            onClick={onToggleTimeline}
+            className={`px-3.5 py-2.5 rounded-2xl border backdrop-blur-md text-xs font-semibold shadow-xl flex items-center gap-2 transition-all active:scale-95 ${
+              isTimelineOpen
+                ? 'bg-amber-500/25 text-amber-300 border-amber-400 font-bold'
+                : 'bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border-neutral-700/80'
+            }`}
+            title="Buka / Tutup Linimasa Kronologi 4 Sayap"
+          >
+            <Calendar className="w-4 h-4 text-amber-400" />
+            <span className="hidden md:inline">Linimasa</span>
+          </button>
+        )}
       </div>
 
       {/* Gallery Wings Modal Drawer */}

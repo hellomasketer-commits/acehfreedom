@@ -8,7 +8,8 @@ import { AudioPlayerDrawer } from './components/AudioPlayerDrawer';
 import { MuseumControls } from './components/MuseumControls';
 import { PassportModal } from './components/PassportModal';
 import { TourGuideOverlay } from './components/TourGuideOverlay';
-import { Compass, Sparkles, BookOpen, Headphones, Glasses, Volume2, X, Award, ChevronRight } from 'lucide-react';
+import { HistoricalTimeline } from './components/HistoricalTimeline';
+import { Compass, Sparkles, BookOpen, Headphones, Glasses, Volume2, X, Award, ChevronRight, Calendar } from 'lucide-react';
 
 export default function App() {
   // Navigation & Exhibit State
@@ -17,6 +18,7 @@ export default function App() {
   const [stampedExhibitIds, setStampedExhibitIds] = useState<string[]>(['cap_sikureueng']);
   const [showPassport, setShowPassport] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const [showTimeline, setShowTimeline] = useState(true);
 
   // Teleportation target state
   const [teleportTarget, setTeleportTarget] = useState<{
@@ -210,6 +212,47 @@ export default function App() {
     setActiveTour(null);
   };
 
+  // Jump directly to a historical era / wing
+  const handleJumpToEra = useCallback(
+    (wingId: WingInfo['id']) => {
+      const wing = MUSEUM_WINGS.find((w) => w.id === wingId);
+      if (wing) {
+        setTeleportTarget({
+          pos: wing.entrancePosition,
+          lookAt: [0, 1.6, 0],
+        });
+        const firstInWing = EXHIBITS.find((e) => e.wingId === wing.id);
+        if (firstInWing) {
+          setActiveExhibitId(firstInWing.id);
+          if (ambientSoundEnabled) {
+            audioGuide.startAmbientSoundscape(firstInWing.ambienceTheme);
+          }
+        }
+        audioGuide.playAcousticChime(587.33); // D5 chime
+      }
+    },
+    [ambientSoundEnabled]
+  );
+
+  // Jump directly to a specific historical artifact / exhibit
+  const handleJumpToExhibit = useCallback(
+    (exhibitId: string) => {
+      const exhibit = EXHIBITS.find((e) => e.id === exhibitId);
+      if (exhibit) {
+        setActiveExhibitId(exhibit.id);
+        setTeleportTarget({
+          pos: [exhibit.pedestalPosition[0], 1.6, exhibit.pedestalPosition[2] + 2.8],
+          lookAt: [exhibit.pedestalPosition[0], 1.2, exhibit.pedestalPosition[2]],
+        });
+        if (ambientSoundEnabled) {
+          audioGuide.startAmbientSoundscape(exhibit.ambienceTheme);
+        }
+        audioGuide.playAcousticChime(659.25); // E5 chime
+      }
+    },
+    [ambientSoundEnabled]
+  );
+
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -225,6 +268,8 @@ export default function App() {
         handleToggleVR();
       } else if (e.code === 'KeyP') {
         setShowPassport((prev) => !prev);
+      } else if (e.code === 'KeyT') {
+        setShowTimeline((prev) => !prev);
       } else if (e.code === 'Space') {
         e.preventDefault();
         if (isAudioPlaying) {
@@ -265,7 +310,7 @@ export default function App() {
         />
       )}
 
-      {/* Museum Bottom Left Controls (Wings Teleport, Tours, Minimap, Passport) */}
+      {/* Museum Bottom Left Controls (Wings Teleport, Tours, Minimap, Passport, Timeline Toggle) */}
       <MuseumControls
         onTeleportToWing={(wing: WingInfo) => {
           setTeleportTarget({
@@ -289,6 +334,19 @@ export default function App() {
         onOpenPassport={() => setShowPassport(true)}
         stampedCount={stampedExhibitIds.length}
         totalExhibits={EXHIBITS.length}
+        onToggleTimeline={() => setShowTimeline((prev) => !prev)}
+        isTimelineOpen={showTimeline}
+      />
+
+      {/* Interactive Bottom-Aligned Historical Timeline */}
+      <HistoricalTimeline
+        activeExhibitId={activeExhibitId}
+        onJumpToEra={handleJumpToEra}
+        onJumpToExhibit={handleJumpToExhibit}
+        onOpenInspector={(exhibitId) => setInspectingExhibitId(exhibitId)}
+        isAudioDrawerOpen={isAudioPlaying && activeExhibit !== null}
+        isOpen={showTimeline}
+        onToggleOpen={() => setShowTimeline((prev) => !prev)}
       />
 
       {/* Persistent Bottom Audio Player Drawer */}
